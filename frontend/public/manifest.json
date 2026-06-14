@@ -1,0 +1,15 @@
+{
+    "name": "EduVerse - Immersive STEM Learning Platform",
+    "short_name": "EduVerse",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "icons": [
+        {
+            "src": "placeholder.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

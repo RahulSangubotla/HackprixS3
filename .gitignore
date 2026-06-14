@@ -1,0 +1,14 @@
+/blockchain/student-reward-system/node_modules
+/blockchain/student-reward/node_modules
+/blockchain/idk/node_modules
+/webfrontend/frontend/node_modules
+/webfrontend/frontend/.env
+/webfrontend/frontend/.env.production
+/webfrontend/frontend/.env.development
+/webfrontend/frontend/.env.sample
+/webfrontend/frontend/.env.local
+/backend/.env
+/fastapiBackend/.env
+/fastapiBackend/.venv
+/fastapiBackend/__pycache__
+/fastapiBackend/media
