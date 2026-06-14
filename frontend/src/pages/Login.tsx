@@ -29,7 +29,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 overflow-hidden relative bg-[#0A0A0A]">   
+    <div className="min-h-screen flex items-center justify-center p-6 overflow-hidden relative bg-background">   
       {/* ── BACKGROUND DECOR ── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <motion.div
@@ -56,21 +56,24 @@ export default function Login() {
         transition={{ duration: 0.8 }}
         className="w-full max-w-[480px] relative z-10"
       >
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 md:mb-16">
            <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="w-20 h-20 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl"
+            className="w-16 h-16 md:w-20 md:h-20 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-2xl backdrop-blur-xl"
            >
               <Lock size={32} className="text-white/40" />
            </motion.div>
-           <h1 className="text-5xl font-black tracking-tighter text-gradient leading-none mb-4 uppercase italic">Admission Gate</h1>
-           <p className="text-white/30 text-sm font-bold tracking-[0.2em] uppercase">Student Authorization Required</p>
+           <span className="inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-white/5 border border-white/10 text-white/50 text-[8px] md:text-[10px] tracking-[0.2em] font-bold mb-4 md:mb-6 uppercase">
+            Student Portal
+          </span>
+           <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-gradient leading-none mb-4 uppercase italic">GURUKUL LOGIN</h1>
+           <p className="text-white/30 text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">Student Authorization Required</p>
         </div>
 
-        <SpatialCard className="bg-white/[0.03] border-white/10 p-10">
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <SpatialCard className="bg-white/[0.02] border-white/5 p-8 md:p-12 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10">
             <div className="space-y-6">
               <div>
                 <label className="text-[10px] font-black text-white/30 mb-3 block uppercase tracking-widest">Student Identifier</label>

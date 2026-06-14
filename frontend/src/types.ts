@@ -47,13 +47,13 @@ export type ClientContentLog = {
 };
 
 export interface User {
-    id: number;
+    id: string;
     username: string;
     email: string;
     role: "student" | "teacher" | "admin";
-    institution: number | null;
+    institution: string | null;
     institution_name: string | null;
-    class_group: number | null;
+    class_group: string | null;
     class_group_name: string | null;
     wallet_address: string | null;
     mobile_number: string | null;
@@ -64,7 +64,7 @@ export interface User {
   }
   
 export interface ProductCategory {
-    id: number;
+    id: string;
     name: string;
     slug: string;
     description: string;
@@ -72,8 +72,8 @@ export interface ProductCategory {
   }
   
 export interface Product {
-    id: number;
-    category: number;
+    id: string;
+    category: string;
     category_name: string;
     name: string;
     description: string;
@@ -93,25 +93,25 @@ export interface Product {
   }
   
 export interface CartItem {
-    id: number;
+    id: string;
     product: Product;
     quantity: number;
     total_points: number;
   }
   
 export interface Cart {
-    id: number;
-    user: number;
+    id: string;
+    user: string;
     items: CartItem[];
     total_cart_points: number;
     created_at: string;
   }
   
 export interface Redemption {
-    id: number;
-    user: number;
+    id: string;
+    user: string;
     user_username: string;
-    product: number;
+    product: string;
     product_name: string;
     quantity: number;
     points_spent: number;

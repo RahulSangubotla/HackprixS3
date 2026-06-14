@@ -11,7 +11,7 @@ import SpatialCard from "@/components/SpatialCard";
 
 const Lounge = () => {
   const navigate = useNavigate();
-  const { fetchUser } = useAuth();
+  const { fetchUser, user } = useAuth();
   const [loadingSubject, setLoadingSubject] = useState<string | null>(null);
   const appStateListenerRef = useRef<PluginListenerHandle | null>(null);
 
@@ -93,7 +93,7 @@ const Lounge = () => {
   const handleOpenVRKahoot = () => {
     localStorage.setItem("vrGameStartTime", Date.now().toString());
     localStorage.setItem("vrGameRoomName", "VR Kahoot");
-    window.open("https://18.60.212.203:8080/", "_blank");
+    window.open(`https://15.206.205.126:8080/theater.html?username=${user?.username}`, "_blank");
   };
 
   return (
