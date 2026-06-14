@@ -45,6 +45,7 @@ FALLBACK_QUESTIONS = [
             "CH4 + 3O2 -> CO2 + 2H2O"
         ],
         "correct": 0,
+        "subject": "chemistry",
         "topic": "balancing chemical equations",
         "option_signals": [
             {"topic": "balancing chemical equations", "delta": 9},
@@ -57,6 +58,7 @@ FALLBACK_QUESTIONS = [
         "q": "During which phase of mitosis do chromosomes align along the cell's equatorial plane?",
         "options": ["Prophase", "Metaphase", "Anaphase", "Telophase"],
         "correct": 1,
+        "subject": "biology",
         "topic": "mitosis",
         "option_signals": [
             {"topic": "mitosis stages", "delta": -5},
@@ -69,6 +71,7 @@ FALLBACK_QUESTIONS = [
         "q": "What type of bond forms when two non-metal atoms share electrons?",
         "options": ["Ionic bond", "Covalent bond", "Metallic bond", "Hydrogen bond"],
         "correct": 1,
+        "subject": "chemistry",
         "topic": "chemical bonding",
         "option_signals": [
             {"topic": "ionic bonding", "delta": -6},
@@ -81,6 +84,7 @@ FALLBACK_QUESTIONS = [
         "q": "What are the reactants in photosynthesis?",
         "options": ["O2 and glucose", "CO2 and H2O", "CO2 and O2", "Glucose and H2O"],
         "correct": 1,
+        "subject": "biology",
         "topic": "photosynthesis",
         "option_signals": [
             {"topic": "photosynthesis", "delta": -7},
@@ -98,6 +102,7 @@ FALLBACK_QUESTIONS = [
             "Same number of neutrons"
         ],
         "correct": 1,
+        "subject": "chemistry",
         "topic": "periodic table",
         "option_signals": [
             {"topic": "atomic mass", "delta": -5},
@@ -110,6 +115,7 @@ FALLBACK_QUESTIONS = [
         "q": "Which nitrogenous base pairs with adenine (A) in DNA?",
         "options": ["Guanine (G)", "Cytosine (C)", "Thymine (T)", "Uracil (U)"],
         "correct": 2,
+        "subject": "biology",
         "topic": "DNA structure",
         "option_signals": [
             {"topic": "DNA base pairing", "delta": -5},
@@ -122,6 +128,7 @@ FALLBACK_QUESTIONS = [
         "q": "A solution with a pH of 3 is best described as:",
         "options": ["Strongly basic", "Weakly basic", "Weakly acidic", "Strongly acidic"],
         "correct": 3,
+        "subject": "chemistry",
         "topic": "acids and bases",
         "option_signals": [
             {"topic": "pH scale", "delta": -8},
@@ -134,6 +141,7 @@ FALLBACK_QUESTIONS = [
         "q": "Where does the Krebs cycle take place in a eukaryotic cell?",
         "options": ["Cytoplasm", "Cell membrane", "Mitochondrial matrix", "Nucleus"],
         "correct": 2,
+        "subject": "biology",
         "topic": "cellular respiration",
         "option_signals": [
             {"topic": "cellular respiration", "delta": -6},
@@ -151,6 +159,7 @@ FALLBACK_QUESTIONS = [
             "Ionic interactions in water"
         ],
         "correct": 1,
+        "subject": "chemistry",
         "topic": "intermolecular forces",
         "option_signals": [
             {"topic": "intramolecular vs intermolecular forces", "delta": -7},
@@ -163,6 +172,7 @@ FALLBACK_QUESTIONS = [
         "q": "Two heterozygous individuals (Aa x Aa) cross. What fraction of offspring will be homozygous recessive (aa)?",
         "options": ["1/4", "1/2", "3/4", "All offspring"],
         "correct": 0,
+        "subject": "biology",
         "topic": "Mendelian genetics",
         "option_signals": [
             {"topic": "Mendelian genetics", "delta": 9},
@@ -198,6 +208,7 @@ Each element must follow this exact structure (note: in this example the correct
   "q": "question text",
   "options": ["wrong option A", "wrong option B", "correct option C", "wrong option D"],
   "correct": 2,
+  "subject": "biology",
   "topic": "photosynthesis",
   "option_signals": [
     {"topic": "photosynthesis", "delta": -6},
@@ -216,6 +227,7 @@ Rules:
 6. option_signals must have exactly 4 elements aligned to the 4 options — option_signals[i] corresponds to options[i].
 7. "correct" is the 0-based index of the correct answer option.
 8. CRITICAL: The correct answer must NOT always be at index 0. Distribute the correct answer across all four positions (0, 1, 2, 3) throughout the 10 questions. No single index should appear more than 4 times.
+9. "subject" must be exactly "chemistry" or "biology" based on the question topic.
 """
 
 
@@ -243,8 +255,10 @@ async def generate_questions():
         if not isinstance(questions, list) or len(questions) < 5:
             raise ValueError(f"Expected list of >= 5 questions, got {len(questions)}")
         for q in questions:
-            if not all(k in q for k in ("q", "options", "correct", "topic", "option_signals")):
+            if not all(k in q for k in ("q", "options", "correct", "subject", "topic", "option_signals")):
                 raise ValueError("Question missing required fields")
+            if q["subject"] not in ("chemistry", "biology"):
+                raise ValueError(f"Invalid subject '{q['subject']}': must be 'chemistry' or 'biology'")
             if len(q["options"]) != 4 or len(q["option_signals"]) != 4:
                 raise ValueError("Question must have exactly 4 options and 4 option_signals")
 
@@ -291,32 +305,33 @@ def _shuffle_answers(questions):
 def compute_profiles():
     """
     Compute the average topic delta for each player based on their answers
-    this session.  Returns {sid: {topic: avg_delta}}.
-    Always keys results by the question's own topic field so they reliably
-    match existing profile entries across sessions.
+    this session.  Returns {sid: {(subject, topic): avg_delta}}.
+    Always keys results by the question's own subject+topic fields so they
+    reliably match existing profile entries across sessions.
     """
     profiles = {}
     for sid, answers in game_state["player_answers"].items():
-        topic_raw = {}  # {topic: [deltas]}
+        topic_raw = {}  # {(subject, topic): [deltas]}
         for q_idx, ans_idx in answers.items():
             if q_idx < len(QUESTIONS):
-                # Always use the question's canonical topic as the key,
+                # Always use the question's canonical subject+topic as the key,
                 # regardless of what the option_signal says.
+                subject = QUESTIONS[q_idx]["subject"]
                 topic = QUESTIONS[q_idx]["topic"]
                 delta = QUESTIONS[q_idx]["option_signals"][ans_idx]["delta"]
-                topic_raw.setdefault(topic, []).append(delta)
+                topic_raw.setdefault((subject, topic), []).append(delta)
         profiles[sid] = {
-            topic: sum(deltas) / len(deltas)
-            for topic, deltas in topic_raw.items()
+            key: sum(deltas) / len(deltas)
+            for key, deltas in topic_raw.items()
         }
     return profiles
 
 
 async def resolve_topics(existing_topics: list[str], new_topics: list[str]) -> dict[str, str]:
     """
-    Use Gemini to map each new topic to an existing one if they are semantically
-    equivalent, or keep it as-is if it is genuinely different.
-    Returns {new_topic: canonical_topic} for all new_topics.
+    Use Gemini to map each new "subject|topic" compound string to an existing one
+    if they are semantically equivalent within the same subject, or keep it as-is
+    if genuinely different.  Returns {new_compound: canonical_compound} for all new_topics.
     """
     # Nothing to resolve if there are no existing topics or no new topics
     if not existing_topics or not new_topics:
@@ -330,6 +345,7 @@ async def resolve_topics(existing_topics: list[str], new_topics: list[str]) -> d
 
     prompt = f"""\
 You are a topic deduplication assistant for an educational assessment system.
+Topics are represented as "subject|topic" compound strings where subject is "chemistry" or "biology".
 
 Existing profile topics (already in the database):
 {json.dumps(existing_topics, indent=2)}
@@ -338,11 +354,11 @@ New topics from the latest quiz session:
 {json.dumps(to_resolve, indent=2)}
 
 For each new topic, decide:
-- If it is semantically equivalent or a near-duplicate of an existing topic, map it to the EXACT existing topic string.
-- If it is genuinely a different topic not covered by any existing one, map it to itself (keep as-is).
+- If it is semantically equivalent or a near-duplicate of an existing topic WITH THE SAME subject prefix, map it to the EXACT existing topic string.
+- If it is genuinely a different topic, or has a different subject, map it to itself (keep as-is).
 
 Return ONLY a valid JSON object mapping each new topic string to its canonical form. No markdown, no explanation.
-Example: {{"food chains": "food chains", "trophic levels": "food chains", "mixtures and solutions": "mixtures"}}
+Example: {{"biology|food chains": "biology|food chains", "biology|trophic levels": "biology|food chains", "chemistry|mixtures and solutions": "chemistry|mixtures"}}
 """
     try:
         response = await gemini_client.aio.models.generate_content(
@@ -362,7 +378,7 @@ Example: {{"food chains": "food chains", "trophic levels": "food chains", "mixtu
         # Build full mapping including exact matches
         result = {t: t for t in exact}
         for t in to_resolve:
-            result[t] = mapping.get(t, t).strip().lower()
+            result[t] = mapping.get(t, t).strip()
         print(f"[Gemini] Topic resolution: {result}")
         return result
     except Exception as exc:
@@ -375,25 +391,31 @@ async def save_profiles(profiles):
     Blend each player's new session deltas into their existing MongoDB profile
     using EMA (alpha=0.25) then upsert by username.
     """
-    for sid, topic_deltas in profiles.items():
+    for sid, subject_topic_deltas in profiles.items():
         if sid not in game_state["players"]:
             continue
 
         username = game_state["players"][sid]["name"]
 
-        # Load existing profile from MongoDB, normalizing topic keys to lowercase
+        # Load existing profile from MongoDB, keyed by "subject|topic" compound strings
         existing_doc = await db_collection.find_one({"username": username})
         existing_profile = {}
         if existing_doc:
             for entry in existing_doc.get("profile", []):
-                key = entry["topic"].strip().lower()
+                subject = entry.get("subject", "").strip().lower()
+                topic = entry["topic"].strip().lower()
+                key = f"{subject}|{topic}" if subject else topic
                 existing_profile[key] = {
+                    "subject": subject,
                     "score": entry["score"],
                     "test_count": entry["test_count"]
                 }
 
-        # Normalize incoming topics to lowercase
-        normalized_deltas = {t.strip().lower(): d for t, d in topic_deltas.items()}
+        # Build compound "subject|topic" keys, normalizing to lowercase
+        normalized_deltas = {
+            f"{subj.strip().lower()}|{t.strip().lower()}": delta
+            for (subj, t), delta in subject_topic_deltas.items()
+        }
 
         # Use Gemini to resolve any near-duplicate topics against the existing profile
         topic_mapping = await resolve_topics(
@@ -403,23 +425,31 @@ async def save_profiles(profiles):
 
         # Merge: EMA for known topics, direct assignment for new ones
         merged = dict(existing_profile)
-        for raw_topic, raw_delta in normalized_deltas.items():
-            key = topic_mapping.get(raw_topic, raw_topic)
+        for raw_key, raw_delta in normalized_deltas.items():
+            key = topic_mapping.get(raw_key, raw_key)
             if key in merged:
                 blended = EMA_ALPHA * raw_delta + (1 - EMA_ALPHA) * merged[key]["score"]
                 merged[key] = {
+                    "subject": merged[key]["subject"],
                     "score": round(max(-10.0, min(10.0, blended)), 2),
                     "test_count": merged[key]["test_count"] + 1
                 }
             else:
+                parts = key.split("|", 1)
                 merged[key] = {
+                    "subject": parts[0] if len(parts) == 2 else "",
                     "score": round(max(-10.0, min(10.0, raw_delta)), 2),
                     "test_count": 1
                 }
 
         profile_list = [
-            {"topic": t, "score": v["score"], "test_count": v["test_count"]}
-            for t, v in merged.items()
+            {
+                "subject": v["subject"],
+                "topic": k.split("|", 1)[1] if "|" in k else k,
+                "score": v["score"],
+                "test_count": v["test_count"]
+            }
+            for k, v in merged.items()
         ]
 
         await db_collection.update_one(
