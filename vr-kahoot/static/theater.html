@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>VR Kahoot - Aesthetic Theatre</title>
+  
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script>window.ioGame = window.io;</script> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
+  <script src="https://unpkg.com/easyrtc@1.1.0/api/easyrtc.js"></script>
+  <script src="https://unpkg.com/networked-aframe/dist/networked-aframe.min.js"></script>
+  
+  <style>
+    .a-enter-ar-button { display: none !important; }
+  </style>
+</head>
+
+<body>
+  <a-scene networked-scene="room: kahoot-vr-room; adapter: wseasyrtc;">
+    
+    <a-assets>
+      <a-asset-item id="robot-model" src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/models/gltf/RobotExpressive/RobotExpressive.glb"></a-asset-item>
+
+      <template id="avatar-template">
+        <a-entity class="avatar" sync-name player-animator>
+          <a-entity class="visuals">
+              <a-entity class="model"
+                        gltf-model="#robot-model" 
+                        scale="0.3 0.3 0.3" 
+                        rotation="0 180 0"
+                        position="0 -1.6 0"
+                        animation-mixer="clip: Idle; crossFadeDuration: 0.4">
+              </a-entity>
+              <a-text class="nametag" value="Loading..." align="center" position="0 0.8 0" rotation="0 180 0" scale="0.5 0.5 0.5" color="yellow" side="double"></a-text>
+          </a-entity>
+        </a-entity>
+      </template>
+
+      <a-mixin id="chair-base" geometry="primitive: box; width: 0.6; height: 0.1; depth: 0.6" material="color: #500; roughness: 0.6"></a-mixin>
+      <a-mixin id="chair-back" geometry="primitive: box; width: 0.6; height: 0.8; depth: 0.1" material="color: #400; roughness: 0.6"></a-mixin>
+      <a-mixin id="chair-leg" geometry="primitive: box; width: 0.06; height: 0.4; depth: 0.06" material="color: #200; roughness: 0.8"></a-mixin>
+      
+      <a-mixin id="sconce" geometry="primitive: cylinder; radius: 0.1; height: 0.4" material="color: #fff8e7; emissive: #ffaa00; emissiveIntensity: 0.5"></a-mixin>
+    </a-assets>
+
+    <a-sky color="#020202"></a-sky>
+
+    <a-entity light="type: ambient; color: #222; intensity: 0.3"></a-entity>
+    
+    <a-entity id="screen-spot" 
+              light="type: spot; color: #fff; intensity: 0.2; angle: 45; penumbra: 0.5" 
+              position="0 10 -5" 
+              rotation="-45 0 0">
+    </a-entity>
+    
+    <a-entity id="audience-light" 
+              light="type: spot; color: #ffaa77; intensity: 0.8; angle: 65; penumbra: 0.5" 
+              position="0 8 4" 
+              rotation="-90 0 0">
+    </a-entity>
+
+    <a-plane position="0 0 0" rotation="-90 0 0" width="30" height="30" color="#0a0a0a" material="roughness: 1; metalness: 0"></a-plane>
+    
+    <a-plane position="0 0.01 2" rotation="-90 0 0" width="2" height="12" color="#600" material="roughness: 1"></a-plane>
+
+    <a-plane position="0 0.01 -8" rotation="-90 0 0" width="16" height="6" color="#150f0f"></a-plane>
+    
+    <a-box position="0 0.02 -5.05" width="16" height="0.05" depth="0.1" color="#DAA520" material="metalness: 0.6; roughness: 0.3"></a-box>
+
+    <a-plane position="0 5 -10.9" width="20" height="10" color="#500" material="side: double; roughness: 1;"></a-plane>
+    <a-box position="-9.5 5 -9" width="2" height="10" depth="2" color="#300"></a-box>
+    <a-box position="9.5 5 -9" width="2" height="10" depth="2" color="#300"></a-box>
+    <a-box position="0 9 -9" width="20" height="2" depth="1" color="#400"></a-box>
+
+    <a-plane position="-10 5 0" rotation="0 90 0" width="25" height="15" color="#050505"></a-plane>
+    <a-plane position="10 5 0" rotation="0 -90 0" width="25" height="15" color="#050505"></a-plane>
+    <a-plane position="0 5 12" rotation="0 180 0" width="25" height="15" color="#050505"></a-plane>
+
+    <a-entity position="-9.9 3 0" rotation="0 0 90"><a-entity mixin="sconce"></a-entity></a-entity>
+    <a-entity position="-9.9 3 4" rotation="0 0 90"><a-entity mixin="sconce"></a-entity></a-entity>
+    <a-entity position="-9.9 3 -4" rotation="0 0 90"><a-entity mixin="sconce"></a-entity></a-entity>
+    
+    <a-entity position="9.9 3 0" rotation="0 0 -90"><a-entity mixin="sconce"></a-entity></a-entity>
+    <a-entity position="9.9 3 4" rotation="0 0 -90"><a-entity mixin="sconce"></a-entity></a-entity>
+    <a-entity position="9.9 3 -4" rotation="0 0 -90"><a-entity mixin="sconce"></a-entity></a-entity>
+
+    <a-entity position="-9.8 4 -5" rotation="0 90 0">
+        <a-box width="1.2" height="0.6" depth="0.1" color="#000"></a-box>
+        <a-text value="EXIT" color="#2ecc71" align="center" width="6" z-offset="0.06"></a-text>
+        <a-entity light="type: point; color: #2ecc71; intensity: 1.5; distance: 3" position="0 0 0.5"></a-entity>
+    </a-entity>
+
+    <a-entity position="9.8 4 -5" rotation="0 -90 0">
+        <a-box width="1.2" height="0.6" depth="0.1" color="#000"></a-box>
+        <a-text value="EXIT" color="#2ecc71" align="center" width="6" z-offset="0.06"></a-text>
+        <a-entity light="type: point; color: #2ecc71; intensity: 1.5; distance: 3" position="0 0 0.5"></a-entity>
+    </a-entity>
+
+
+    <a-entity id="seating-area" position="0 0 2">
+        <a-entity position="-4 0.4 0">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="-2 0.4 0">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        
+        <a-entity position="2 0.4 0">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="4 0.4 0">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        
+        <a-entity position="-4 0.4 2">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="-2 0.4 2">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="2 0.4 2">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="4 0.4 2">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+
+        <a-entity position="-4 0.4 4">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="-2 0.4 4">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="2 0.4 4">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+        <a-entity position="4 0.4 4">
+            <a-entity mixin="chair-base"></a-entity><a-entity mixin="chair-back" position="0 0.4 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 0.25"></a-entity>
+            <a-entity mixin="chair-leg" position="-0.25 -0.2 -0.25"></a-entity><a-entity mixin="chair-leg" position="0.25 -0.2 -0.25"></a-entity>
+        </a-entity>
+    </a-entity>
+
+    <a-entity id="main-screen" position="0 4.5 -9.8">
+        <a-box width="12.4" height="7.2" depth="0.1" color="#111"></a-box>
+        <a-plane position="0 0 0.06" width="12" height="7" color="#000"></a-plane>
+        <a-box id="timer-bar" position="0 3.3 0.1" width="12" height="0.15" depth="0.01" color="#00ff00"></a-box>
+        <a-entity id="screen-text" text="value: Waiting for Host...; align: center; width: 10; color: white" position="0 0.5 0.15"></a-entity>
+    </a-entity>
+
+    <a-entity id="answer-buttons" position="0 1.2 -3" visible="false">
+        <a-box class="clickable" position="-1.8 0 0" color="#e74c3c" click-answer="index: 0" depth="0.2" height="0.6" width="1"><a-text value="A" align="center" z-offset="0.11"></a-text></a-box>
+        <a-box class="clickable" position="-0.6 0 0" color="#3498db" click-answer="index: 1" depth="0.2" height="0.6" width="1"><a-text value="B" align="center" z-offset="0.11"></a-text></a-box>
+        <a-box class="clickable" position="0.6 0 0" color="#f1c40f" click-answer="index: 2" depth="0.2" height="0.6" width="1"><a-text value="C" align="center" color="black" z-offset="0.11"></a-text></a-box>
+        <a-box class="clickable" position="1.8 0 0" color="#2ecc71" click-answer="index: 3" depth="0.2" height="0.6" width="1"><a-text value="D" align="center" z-offset="0.11"></a-text></a-box>
+    </a-entity>
+
+    <a-entity id="local-rig" 
+              wasd-controls="acceleration: 20" 
+              gamepad-move="speed: 5.0" 
+              gamepad-look="sensitivity: 2.0"
+              gamepad-clicker
+              wall-collider="width: 25; length: 25"
+              random-spawn
+              voice-control
+              position="0 0 5">
+        
+        <a-entity id="main-camera" camera position="0 1.6 0" look-controls="pointerLockEnabled: true">
+            <a-entity cursor="fuse: false"
+                      raycaster="objects: .clickable"
+                      position="0 0 -1"
+                      geometry="primitive: ring; radiusInner: 0.005; radiusOuter: 0.01"
+                      material="color: #3BB143; shader: flat">
+            </a-entity>
+        </a-entity>
+    </a-entity>
+
+    <a-entity id="player-avatar"
+              networked="template:#avatar-template; attachTemplateToLocal:true;"
+              rig-follow>
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // --- SPEAKING HUD ---
+    const SpeakingHUD = {
+        speakers: {},
+        update: function(name, isSpeaking) {
+            if (isSpeaking) this.speakers[name] = true;
+            else delete this.speakers[name];
+            const hud = document.getElementById('speaking-hud');
+            if (!hud) return;
+            hud.innerHTML = Object.keys(this.speakers).map(n =>
+                `<div style="color:#2ecc71;font-size:16px;font-weight:bold;text-shadow:0 0 8px #2ecc71;margin:2px 0;">${n}</div>`
+            ).join('');
+        }
+    };
+
+    // --- LIGHTING CONTROL SYSTEM ---
+    const TheaterLights = {
+        isGameRunning: false,
+        startGame: function() {
+            if (this.isGameRunning) return; 
+            this.isGameRunning = true;
+
+            const audienceLight = document.querySelector('#audience-light');
+            const screenSpot = document.querySelector('#screen-spot');
+
+            // 1. Dim the House Lights (Audience)
+            if(audienceLight) {
+                audienceLight.setAttribute('animation', {
+                    property: 'light.intensity',
+                    to: 0.1,
+                    dur: 2000,
+                    easing: 'easeInOutQuad'
+                });
+            }
+
+            // 2. Brighten the Stage Lights (Screen)
+            if(screenSpot) {
+                screenSpot.setAttribute('animation', {
+                    property: 'light.intensity',
+                    to: 1.0,
+                    dur: 2000,
+                    easing: 'easeInOutQuad'
+                });
+            }
+        }
+    };
+
+    // --- GAMEPAD & LOGIC ---
+    AFRAME.registerComponent('gamepad-move', {
+      schema: { speed: {default: 5.0}, deadzone: {default: 0.15} },
+      init: function() { this.camera = document.querySelector('[camera]'); },
+      tick: function(time, dt) {
+        const gamepads = navigator.getGamepads();
+        const gp = gamepads[0] || gamepads[1];
+        if (!gp) return;
+        let x = gp.axes[0]; 
+        let z = gp.axes[1]; 
+        if (Math.abs(x) < this.data.deadzone) x = 0;
+        if (Math.abs(z) < this.data.deadzone) z = 0;
+        if (x === 0 && z === 0) return;
+        const angle = this.camera.object3D.rotation.y + this.el.object3D.rotation.y;
+        const moveX = x * Math.cos(angle) + z * Math.sin(angle);
+        const moveZ = z * Math.cos(angle) - x * Math.sin(angle);
+        const dTime = dt / 1000;
+        this.el.object3D.position.x += moveX * this.data.speed * dTime;
+        this.el.object3D.position.z += moveZ * this.data.speed * dTime;
+      }
+    });
+
+    AFRAME.registerComponent('gamepad-look', {
+        schema: { sensitivity: {default: 2.0} },
+        tick: function (time, dt) {
+            const gamepads = navigator.getGamepads();
+            const gp = gamepads[0] || gamepads[1];
+            if (!gp) return;
+            const lookX = gp.axes[2]; 
+            if (Math.abs(lookX) < 0.1) return;
+            const rotation = this.el.getAttribute('rotation');
+            rotation.y -= lookX * this.data.sensitivity;
+            this.el.setAttribute('rotation', rotation);
+        }
+    });
+
+    AFRAME.registerComponent('gamepad-clicker', {
+        init: function() {
+            this.cursorEl = document.querySelector('[raycaster]');
+            this.buttonPressed = false;
+        },
+        tick: function() {
+            const gamepads = navigator.getGamepads();
+            const gp = gamepads[0];
+            if (!gp || !this.cursorEl) return;
+            if (gp.buttons[0].pressed) {
+                if (!this.buttonPressed) {
+                    this.triggerClick();
+                    this.buttonPressed = true;
+                }
+            } else { this.buttonPressed = false; }
+        },
+        triggerClick: function() {
+            const raycaster = this.cursorEl.components.raycaster;
+            if (raycaster && raycaster.intersectedEls.length > 0) {
+                raycaster.intersectedEls[0].emit('click');
+            }
+        }
+    });
+
+    AFRAME.registerComponent('rig-follow', {
+      init: function() {
+        this.camPos = new THREE.Vector3();
+        this.camQuat = new THREE.Quaternion();
+        this.camEuler = new THREE.Euler();
+        this.camEuler.order = 'YXZ';
+      },
+      tick: function () {
+        const cam = document.querySelector('#main-camera');
+        if (!cam) return;
+        cam.object3D.getWorldPosition(this.camPos);
+        this.el.setAttribute('position', this.camPos);
+        cam.object3D.getWorldQuaternion(this.camQuat);
+        this.camEuler.setFromQuaternion(this.camQuat);
+        this.el.object3D.rotation.y = this.camEuler.y;
+      }
+    });
+
+    AFRAME.registerComponent('sync-name', {
+        schema: {
+            name:  { type: 'string', default: 'Loading...' },
+            state: { type: 'string', default: '' }
+        },
+        init: function() {
+            this.trySetName();
+            setTimeout(() => this.trySetName(), 500);
+        },
+        trySetName: function() {
+            if (NAF.utils.isMine(this.el)) {
+                const params = new URLSearchParams(window.location.search);
+                const myName = params.get('username') || 'Guest';
+                this.el.setAttribute('sync-name', 'name', myName);
+                const visuals = this.el.querySelector('.visuals');
+                if (visuals) visuals.setAttribute('visible', false);
+            }
+        },
+        update: function() {
+            const name = this.data.name;
+            const textEl = this.el.querySelector('.nametag');
+            if (textEl) textEl.setAttribute('value', name);
+            SpeakingHUD.update(name, this.data.state === 'speaking');
+            this.updateColor(name);
+        },
+        remove: function() {
+            SpeakingHUD.update(this.data.name, false);
+        },
+        updateColor: function(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            let color = '#';
+            for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).substr(-2);
+            const apply = () => {
+                const obj = this.el.getObject3D('mesh');
+                if (obj) obj.traverse(n => { if (n.isMesh) n.material.color.set(color); });
+            };
+            if (this.el.getObject3D('mesh')) apply();
+            else this.el.addEventListener('model-loaded', apply);
+        }
+    });
+
+    AFRAME.registerComponent('wall-collider', {
+      schema: { width: {default: 25}, length: {default: 25}, padding: {default: 0.5} },
+      tick: function () {
+        const pos = this.el.object3D.position;
+        const halfWidth = (this.data.width / 2) - this.data.padding;
+        const halfLength = (this.data.length / 2) - this.data.padding;
+        if (pos.x < -halfWidth) pos.x = -halfWidth;
+        if (pos.x > halfWidth) pos.x = halfWidth;
+        if (pos.z < -halfLength) pos.z = -halfLength;
+        if (pos.z > halfLength) pos.z = halfLength;
+      }
+    });
+
+    AFRAME.registerComponent('player-animator', {
+        init: function() {
+            this.model = this.el.querySelector('.model');
+            this.prevPos = new THREE.Vector3();
+            this.currentAnim = "Idle";
+            this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
+        },
+        tick: function() {
+            if (!this.model) return;
+            const currentPos = this.el.object3D.getWorldPosition(new THREE.Vector3());
+            const distSq = currentPos.distanceToSquared(this.prevPos);
+            if (distSq > 0.0005) { 
+                if (this.currentAnim !== "Walking") {
+                    this.model.setAttribute('animation-mixer', 'clip: Walking; crossFadeDuration: 0.2');
+                    this.currentAnim = "Walking";
+                }
+            } else {
+                if (this.currentAnim !== "Idle") {
+                    this.model.setAttribute('animation-mixer', 'clip: Idle; crossFadeDuration: 0.2');
+                    this.currentAnim = "Idle";
+                }
+            }
+            this.prevPos.copy(currentPos);
+        }
+    });
+
+    AFRAME.registerComponent('click-answer', {
+        schema: { index: {type: 'int', default: 0} },
+        init: function () {
+            this.el.addEventListener('click', () => {
+                if (window.gameSocket && window.gameSocket.connected) {
+                    window.gameSocket.emit('submit_answer', this.data.index);
+                    this.el.setAttribute('scale', '0.9 0.9 0.9');
+                    setTimeout(() => this.el.setAttribute('scale', '1 1 1'), 150);
+                }
+            });
+        }
+    });
+
+    AFRAME.registerComponent('random-spawn', {
+      init: function () {
+        this.el.setAttribute('position', `${(Math.random() * 8) - 4} 0 ${(Math.random() * 4) + 2}`);
+      }
+    });
+
+    AFRAME.registerComponent('voice-control', {
+        init: function() {
+            this.muted = false;
+            this.speaking = false;
+            this.analyser = null;
+            this.dataArray = null;
+            this.THRESHOLD = 15;
+            this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
+
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(stream => {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const analyser = ctx.createAnalyser();
+                    analyser.fftSize = 256;
+                    ctx.createMediaStreamSource(stream).connect(analyser);
+                    this.analyser = analyser;
+                    this.dataArray = new Uint8Array(analyser.frequencyBinCount);
+                })
+                .catch(err => console.warn('Mic analyser failed:', err));
+
+            this._onKey = (e) => { if (e.code === 'KeyM' && !e.repeat) this.toggleMute(); };
+            window.addEventListener('keydown', this._onKey);
+        },
+        remove: function() {
+            window.removeEventListener('keydown', this._onKey);
+        },
+        toggleMute: function() {
+            this.muted = !this.muted;
+            SimpleVC.setMuted(this.muted);
+            if (this.muted) { this.speaking = false; this._syncState(); }
+        },
+        tick: function() {
+            if (this.muted || !this.analyser) return;
+            this.analyser.getByteFrequencyData(this.dataArray);
+            let sum = 0;
+            for (let i = 0; i < this.dataArray.length; i++) sum += this.dataArray[i];
+            const isSpeaking = (sum / this.dataArray.length) > this.THRESHOLD;
+            if (isSpeaking !== this.speaking) {
+                this.speaking = isSpeaking;
+                this._syncState();
+            }
+        },
+        _syncState: function() {
+            const avatar = document.querySelector('#player-avatar');
+            if (avatar) avatar.setAttribute('sync-name', 'state', this.speaking ? 'speaking' : '');
+        }
+    });
+
+    // --- SIMPLE VOICE CHAT (plain WebRTC, signaled via socket.io) ---
+    const SimpleVC = {
+        localStream: null,
+        peers: {},
+        audioEls: {},
+        mySid: null,
+        _pending: [],
+
+        init: function(sid) {
+            this.mySid = sid;
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(stream => {
+                    this.localStream = stream;
+                    this._pending.forEach(p => this._createConnection(p.sid, p.offerer));
+                    this._pending = [];
+                })
+                .catch(err => console.warn('[VC] Mic failed:', err));
+        },
+
+        setMuted: function(muted) {
+            if (this.localStream)
+                this.localStream.getAudioTracks().forEach(t => { t.enabled = !muted; });
+        },
+
+        handlePlayerList: function(players) {
+            Object.keys(players).forEach(peerSid => {
+                if (peerSid === this.mySid || this.peers[peerSid]) return;
+                const isOfferer = this.mySid < peerSid;
+                if (!this.localStream) this._pending.push({ sid: peerSid, offerer: isOfferer });
+                else this._createConnection(peerSid, isOfferer);
+            });
+            Object.keys(this.peers).forEach(peerSid => {
+                if (!players[peerSid]) this._closeConnection(peerSid);
+            });
+        },
+
+        handleSignal: function(msg) {
+            const { from, type, data } = msg;
+            if (type === 'offer') {
+                if (!this.peers[from]) this._createConnection(from, false);
+                const pc = this.peers[from];
+                pc.setRemoteDescription(new RTCSessionDescription(data))
+                    .then(() => pc.createAnswer())
+                    .then(ans => pc.setLocalDescription(ans))
+                    .then(() => window.gameSocket.emit('webrtc_signal', {
+                        to: from, from: this.mySid, type: 'answer', data: pc.localDescription
+                    }));
+            } else if (type === 'answer') {
+                if (this.peers[from]) this.peers[from].setRemoteDescription(new RTCSessionDescription(data));
+            } else if (type === 'ice') {
+                if (this.peers[from]) this.peers[from].addIceCandidate(new RTCIceCandidate(data)).catch(() => {});
+            }
+        },
+
+        _createConnection: function(peerSid, isOfferer) {
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            this.peers[peerSid] = pc;
+            this.localStream.getTracks().forEach(t => pc.addTrack(t, this.localStream));
+
+            pc.onicecandidate = e => {
+                if (e.candidate) window.gameSocket.emit('webrtc_signal', {
+                    to: peerSid, from: this.mySid, type: 'ice', data: e.candidate
+                });
+            };
+
+            pc.ontrack = e => {
+                if (!this.audioEls[peerSid]) {
+                    const audio = document.createElement('audio');
+                    audio.setAttribute('playsinline', '');
+                    document.body.appendChild(audio);
+                    this.audioEls[peerSid] = audio;
+                }
+                this.audioEls[peerSid].srcObject = e.streams[0];
+                this.audioEls[peerSid].muted = true;
+                this.audioEls[peerSid].play()
+                    .then(() => { this.audioEls[peerSid].muted = false; })
+                    .catch(err => console.warn('[VC] play failed:', err));
+            };
+
+            if (isOfferer) {
+                pc.createOffer()
+                    .then(o => pc.setLocalDescription(o))
+                    .then(() => window.gameSocket.emit('webrtc_signal', {
+                        to: peerSid, from: this.mySid, type: 'offer', data: pc.localDescription
+                    }));
+            }
+        },
+
+        _closeConnection: function(peerSid) {
+            if (this.peers[peerSid]) { this.peers[peerSid].close(); delete this.peers[peerSid]; }
+            if (this.audioEls[peerSid]) { this.audioEls[peerSid].remove(); delete this.audioEls[peerSid]; }
+        }
+    };
+
+    window.addEventListener('load', function() {
+        NAF.schemas.add({
+            template: '#avatar-template',
+            components: [
+                'position',
+                'rotation',
+                { component: 'sync-name', property: 'name' },
+                { component: 'sync-name', property: 'state' }
+            ]
+        });
+
+        window.gameSocket = window.ioGame(`${window.location.protocol}//${window.location.hostname}:8080`);
+        
+        window.gameSocket.on('connect', () => {
+            const params = new URLSearchParams(window.location.search);
+            window.gameSocket.emit('join_game', { name: params.get('username') || 'Guest' });
+            SimpleVC.init(window.gameSocket.id);
+        });
+
+        window.gameSocket.on('show_question', (data) => {
+            TheaterLights.startGame();
+            const text = `${data.q}\n\nA: ${data.options[0]}   B: ${data.options[1]}\nC: ${data.options[2]}   D: ${data.options[3]}`;
+            const screen = document.querySelector('#screen-text');
+            if(screen) screen.setAttribute('text', { value: text, color: 'white' });
+            document.querySelector('#timer-bar').setAttribute('width', 12);
+            document.querySelector('#timer-bar').setAttribute('color', '#00ff00');
+            document.querySelector('#answer-buttons').setAttribute('visible', true);
+        });
+
+        window.gameSocket.on('timer_update', (timeLeft) => {
+            const bar = document.querySelector('#timer-bar');
+            if(bar) bar.setAttribute('width', (timeLeft / 15) * 12);
+        });
+
+        window.gameSocket.on('show_results', (data) => {
+            document.querySelector('#screen-text').setAttribute('text', { value: `Time's Up!\nCorrect: Option ${data.correct_option + 1}` });
+            document.querySelector('#answer-buttons').setAttribute('visible', false);
+        });
+
+        window.gameSocket.on('player_list_update', (players) => {
+            SimpleVC.handlePlayerList(players);
+        });
+
+        window.gameSocket.on('webrtc_signal', (msg) => {
+            SimpleVC.handleSignal(msg);
+        });
+    });
+
+    const serverUrl = `${window.location.protocol}//${window.location.hostname}:8081`;
+    document.querySelector('a-scene').setAttribute('networked-scene', {
+        room: 'kahoot-vr-room',
+        adapter: 'wseasyrtc',
+        serverURL: serverUrl
+    });
+  </script>
+
+  <div id="speaking-hud" style="position:fixed; top:20px; left:20px; z-index:999; pointer-events:none; font-family:sans-serif;"></div>
+</body>
+</html>

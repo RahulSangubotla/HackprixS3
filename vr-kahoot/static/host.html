@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kahoot VR - Host</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #34495e; padding: 20px; border-radius: 10px; width: 300px; text-align: center; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        button { background: #27ae60; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; margin: 10px; width: 100%; transition: 0.3s; }
+        button:hover { background: #2ecc71; }
+        .reset-btn { background: #c0392b; }
+        .reset-btn:hover { background: #e74c3c; }
+        ul { list-style: none; padding: 0; }
+        li { background: #ecf0f1; color: #2c3e50; margin: 5px 0; padding: 10px; border-radius: 5px; font-weight: bold; display: flex; justify-content: space-between; }
+        #statusCard { display: none; }
+        .status-msg { padding: 10px; border-radius: 5px; font-size: 14px; margin-top: 8px; }
+        .status-loading { background: #f39c12; color: #fff; }
+        .status-ready   { background: #27ae60; color: #fff; }
+        .status-saved   { background: #2980b9; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>Host Control Panel</h1>
+    
+    <div class="card">
+        <button onclick="nextQuestion()">Start / Next Question</button>
+        <button class="reset-btn" onclick="resetGame()">RESET GAME</button>
+    </div>
+
+    <div class="card" id="statusCard">
+        <h3>Status</h3>
+        <div id="statusMsg" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+        <h3>Leaderboard</h3>
+        <ul id="playerList"></ul>
+    </div>
+
+    <script>
+        const socket = io(`${window.location.protocol}//${window.location.hostname}:8080`);
+
+        socket.on('player_list_update', (players) => {
+            const list = document.getElementById('playerList');
+            list.innerHTML = "";
+            const sorted = Object.values(players).sort((a,b) => b.score - a.score);
+            
+            sorted.forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${p.name}</span> <span>${p.score} pts</span>`;
+                list.appendChild(li);
+            });
+        });
+
+        function nextQuestion() { socket.emit('host_next_question'); }
+        function resetGame() { socket.emit('host_reset_game'); }
+
+        function showStatus(message, type) {
+            const card = document.getElementById('statusCard');
+            const msg  = document.getElementById('statusMsg');
+            card.style.display = 'block';
+            msg.textContent = message;
+            msg.className = 'status-msg ' + type;
+        }
+
+        socket.on('questions_loading', () => {
+            showStatus('Generating questions with AI…', 'status-loading');
+        });
+
+        socket.on('questions_ready', (data) => {
+            showStatus(`${data.count} questions ready!`, 'status-ready');
+        });
+
+        socket.on('profiles_saved', () => {
+            showStatus('Player profiles saved to database ✓', 'status-saved');
+        });
+    </script>
+</body>
+</html>

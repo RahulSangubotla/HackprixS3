@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Join VR Kahoot</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #2c3e50; color: white; margin: 0; }
+        .container { background: #34495e; padding: 40px; border-radius: 10px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        input { padding: 15px; margin: 10px 0; border-radius: 5px; border: none; width: 250px; font-size: 16px; }
+        button { padding: 15px 30px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; width: 100%; transition: 0.2s; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enter the Theater</h1>
+        <input type="text" id="username" placeholder="Enter Your Name" />
+        <br>
+        <button onclick="enterVR()">JOIN GAME</button>
+    </div>
+
+    <script>
+        function enterVR() {
+            const name = document.getElementById('username').value;
+            if(name) {
+                window.location.href = `/theater.html?username=${encodeURIComponent(name)}`;
+            } else {
+                alert("Please enter a name!");
+            }
+        }
+    </script>
+</body>
+</html>
