@@ -12,7 +12,7 @@ const Layout = ({ children }: LayoutProps) => {
       <main className="relative z-0 pb-32">
         {children}
       </main>
-      <AIChatbot />
+      <AIChatbot/>
       <FloatingNav />
     </div>
   );

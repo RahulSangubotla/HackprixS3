@@ -88,6 +88,31 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
+# Hardhat test wallets — acc0 and acc1 already used, start from index 2
+HARDHAT_WALLETS = [
+    {"address": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", "private_key": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"},
+    {"address": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8", "private_key": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"},
+    {"address": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc", "private_key": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"},
+    {"address": "0x90f79bf6eb2c4f870365e785982e1f101e93b906", "private_key": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"},
+    {"address": "0x15d34aaf54267db7d7c367839aaf71a00a2c6a65", "private_key": "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"},
+    {"address": "0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc", "private_key": "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"},
+    {"address": "0x976ea74026e726554db657fa54763abd0c3a0aa9", "private_key": "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e"},
+    {"address": "0x14dc79964da2c08b23698b3d3cc7ca32193d9955", "private_key": "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"},
+    {"address": "0x23618e81e3f5cdf7f54c3d65f7fbc0abf5b21e8f", "private_key": "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"},
+    {"address": "0xa0ee7a142d267c1f36714e4a8f75612f20a79720", "private_key": "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"},
+    {"address": "0xbcd4042de499d14e55001ccbb24a551f3b954096", "private_key": "0xf214f2b2cd398c806f84e317254e0f0b801d0643303237d97a22a48e01628897"},
+    {"address": "0x71be63f3384f5fb98995898a86b02fb2426c5788", "private_key": "0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82"},
+    {"address": "0xfabb0ac9d68b0b445fb7357272ff202c5651694a", "private_key": "0xa267530f49f8280200edf313ee7af6b827f2a8bce2897751d06a843f644967b1"},
+    {"address": "0x1cbd3b2770909d4e10f157cabc84c7264073c9ec", "private_key": "0x47c99abed3324a2707c28affff1267e45918ec8c3f20b8aa892e8b065d2942dd"},
+    {"address": "0xdf3e18d64bc6a983f673ab319ccae4f1a57c7097", "private_key": "0xc526ee95bf44d8fc405a158bb884d9d1238d99f0612e9f33d006bb0789009aaa"},
+    {"address": "0xcd3b766ccdd6ae721141f452c550ca635964ce71", "private_key": "0x8166f546bab6da521a8369cab06c5d2b9e46670292d85c875ee9ec20e84ffb61"},
+    {"address": "0x2546bcd3c84621e976d8185a91a922ae77ecec30", "private_key": "0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0"},
+    {"address": "0xbda5747bfd65f08deb54cb465eb87d40e51b197e", "private_key": "0x689af8efa8c651a91ad287602527f3af2fe9f6501a7ac4b061667b5a93e037fd"},
+    {"address": "0xdd2fd4581271e230360230f9337d5c0430bf44c0", "private_key": "0xde9be858da4a475276426320d5e9262ecfc3ba460bfac56360bfa6c4c28b4ee0"},
+    {"address": "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199", "private_key": "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e"},
+]
+HARDHAT_WALLETS_START_INDEX = 2  # acc0 and acc1 already assigned manually
+
 bearer_scheme = HTTPBearer(auto_error=True)
 
 
@@ -758,6 +783,18 @@ async def register_user(data: UserCreate, request: Request):
             cg_link = cg
             print(f"[AUTH] Found class group association: {cg.name}", flush=True)
 
+    # Auto-assign next available Hardhat wallet sequentially
+    assigned_wallet_address = None
+    assigned_private_key = None
+    users_with_wallet = await User.find(User.wallet_address != None).count()
+    wallet_index = HARDHAT_WALLETS_START_INDEX + users_with_wallet
+    if wallet_index < len(HARDHAT_WALLETS):
+        assigned_wallet_address = HARDHAT_WALLETS[wallet_index]["address"]
+        assigned_private_key = HARDHAT_WALLETS[wallet_index]["private_key"]
+        print(f"[AUTH] Assigning Hardhat wallet index {wallet_index}: {assigned_wallet_address}", flush=True)
+    else:
+        print(f"[AUTH] Warning: No Hardhat wallets left to assign (index {wallet_index})", flush=True)
+
     user = User(
         username=data.username,
         email=data.email,
@@ -766,6 +803,8 @@ async def register_user(data: UserCreate, request: Request):
         institution=inst_link,
         class_group=cg_link,
         mobile_number=data.mobile_number,
+        wallet_address=assigned_wallet_address,
+        private_key=assigned_private_key,
     )
     await user.insert()
     print(f"[AUTH] User registered successfully: {user.username} (ID: {user.id})", flush=True)
@@ -1106,34 +1145,11 @@ async def chat_bot_endpoint(
         from google import genai
         from google.genai import types
 
-        # Try both common names for the API key
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        
-        if not api_key or api_key.lower() in ["none", "undefined", ""]:
-            print("[GEMINI] ERROR: No API Key found in environment (checked GEMINI_API_KEY and GOOGLE_API_KEY)", flush=True)
-            raise HTTPException(
-                status_code=500, 
-                detail="Gemini API Key is missing. Please add GEMINI_API_KEY to your fastapiBackend/.env file."
-            )
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="API Key not configured")
 
-        # Ensure no accidental whitespace or quotes
-        api_key = api_key.strip().replace('"', '').replace("'", "")
-        
-        if len(api_key) < 10:
-            print(f"[GEMINI] ERROR: API Key seems too short ({len(api_key)} chars)", flush=True)
-            raise HTTPException(status_code=500, detail="Invalid API Key format: The key is too short.")
-
-        # Log safe info about the key
-        print(f"[GEMINI] Attempting to use key: {api_key[:4]}...{api_key[-4:]} (Length: {len(api_key)})", flush=True)
-        
-        # Synchronize for any internal SDK lookups
-        os.environ["GOOGLE_API_KEY"] = api_key
-        
-        try:
-            client = genai.Client(api_key=api_key)
-        except Exception as client_err:
-            print(f"[GEMINI] Client initialization failed: {str(client_err)}", flush=True)
-            raise HTTPException(status_code=500, detail=f"Failed to initialize Gemini Client: {str(client_err)}")
+        client = genai.Client(api_key=api_key)
 
         chat_history = []
         for msg in data.history:
@@ -1163,6 +1179,84 @@ async def chat_bot_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/scholar-observations/")
+async def get_scholar_observations(current_user: User = Depends(get_current_user)):
+    import logging
+    # Grab Uvicorn's default logger
+    logger = logging.getLogger("uvicorn.error")
+
+    try:
+        import httpx
+        import json
+        from google import genai
+        from google.genai import types
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+        profile_data = {}
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
+                resp = await client.get(
+                    f"https://15.206.205.126:8080/api/profile/{current_user.username}"
+                )
+                
+                # Print the status code to the terminal immediately
+                print(f"[OBSERVATIONS] Response Status: {resp.status_code}", flush=True)
+                
+                if resp.status_code == 200:
+                    profile_data = resp.json()
+                    
+                    # Force print the data to the terminal
+                    print(f"[OBSERVATIONS] Profile Data: {profile_data}", flush=True)
+                    
+                    # Also log it formally
+                    logger.info(f"Profile Data fetched for {current_user.username}: {profile_data}")
+                else:
+                    print(f"[OBSERVATIONS] Failed to fetch profile. Status: {resp.status_code}", flush=True)
+                    logger.warning(f"Failed to fetch profile for {current_user.username}. Status: {resp.status_code}")
+                    
+        except Exception as http_err:
+            # Print exactly why the request failed (timeout, connection refused, etc.)
+            print(f"[OBSERVATIONS] HTTPX Error: {str(http_err)}", flush=True)
+            logger.error(f"HTTPX Error fetching profile: {str(http_err)}")
+
+        profile_summary = json.dumps(profile_data, indent=2) if profile_data else f"Username: {current_user.username}, XP: {current_user.xp}"
+
+        prompt = f"""You are an academic advisor AI. Based on the student profile data below, generate 3 to 5 concise, insightful, and accurate observations on the various weaknesses and strengths in various subjects and topics.
+
+Return ONLY a valid JSON array of about 3 to 5 strings. No markdown, no explanation, just the array.
+
+Student profile:
+{profile_summary}
+
+Format: ["observation 1", "observation 2", "observation 3", "observation 4", "observation 5"]"""
+
+        genai_client = genai.Client(api_key=api_key)
+        response = genai_client.models.generate_content(
+            model="gemini-2.5-flash", # Updated to a valid model version
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.7, max_output_tokens=1024)
+        )
+
+        import re
+        text = response.text.strip()
+        match = re.search(r'\[.*?\]', text, re.DOTALL)
+        if match:
+            observations = json.loads(match.group())
+            observations = [str(o) for o in observations[:5]]
+        else:
+            observations = [text[:300]]
+
+        return {"observations": observations}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc() # Prints the stack trace if Gemini or something else fails
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/lectures/multi-quiz/generate/{subject}/")
 async def generate_quiz_ai(
@@ -1173,34 +1267,11 @@ async def generate_quiz_ai(
         from google import genai
         from google.genai import types
 
-        # Try both common names for the API key
-        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        
-        if not api_key or api_key.lower() in ["none", "undefined", ""]:
-            print("[GEMINI] ERROR: No API Key found in environment (checked GEMINI_API_KEY and GOOGLE_API_KEY)", flush=True)
-            raise HTTPException(
-                status_code=500, 
-                detail="Gemini API Key is missing. Please add GEMINI_API_KEY to your fastapiBackend/.env file."
-            )
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="API Key not configured")
 
-        # Ensure no accidental whitespace or quotes
-        api_key = api_key.strip().replace('"', '').replace("'", "")
-        
-        if len(api_key) < 10:
-            print(f"[GEMINI] ERROR: API Key seems too short ({len(api_key)} chars)", flush=True)
-            raise HTTPException(status_code=500, detail="Invalid API Key format: The key is too short.")
-
-        # Log safe info about the key
-        print(f"[GEMINI] Attempting to use key: {api_key[:4]}...{api_key[-4:]} (Length: {len(api_key)})", flush=True)
-        
-        # Synchronize for any internal SDK lookups
-        os.environ["GOOGLE_API_KEY"] = api_key
-        
-        try:
-            client = genai.Client(api_key=api_key)
-        except Exception as client_err:
-            print(f"[GEMINI] Client initialization failed: {str(client_err)}", flush=True)
-            raise HTTPException(status_code=500, detail=f"Failed to initialize Gemini Client: {str(client_err)}")
+        client = genai.Client(api_key=api_key)
 
         prompt = f"""Generate 5 multiple-choice quiz questions about {subject}.
         Format requirements:
@@ -1209,7 +1280,7 @@ async def generate_quiz_ai(
         - Difficulty: Undergraduate level."""
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -1287,7 +1358,27 @@ async def list_categories_endpoint():
     return await ProductCategory.find(ProductCategory.is_active == True).to_list()
 
 
-@api_router.get("/marketplace/products/", response_model=List[Product])
+def _serialize_product(p: Product) -> dict:
+    return {
+        "id": str(p.id),
+        "name": p.name,
+        "description": p.description or "",
+        "product_type": p.product_type,
+        "points_price": p.points_price,
+        "stock": p.stock,
+        "is_digital": p.is_digital,
+        "digital_file_path": p.digital_file_path,
+        "external_url": str(p.external_url) if p.external_url else None,
+        "thumbnail": p.thumbnail,
+        "metadata": p.metadata,
+        "is_active": p.is_active,
+        "featured": p.featured,
+        "created_at": p.created_at.isoformat(),
+        "updated_at": p.updated_at.isoformat(),
+    }
+
+
+@api_router.get("/marketplace/products/")
 async def list_products_endpoint(
     search: Optional[str] = Query(None),
     ordering: Optional[str] = Query(None)
@@ -1314,20 +1405,37 @@ async def list_products_endpoint(
 
         products.sort(key=get_sort_key, reverse=reverse)
 
-    return products
+    return [_serialize_product(p) for p in products]
 
 
-@api_router.get("/marketplace/products/{product_id}/", response_model=Product)
+@api_router.get("/marketplace/products/{product_id}/")
 async def get_product_detail_endpoint(product_id: str):
     product = await Product.get(product_id)
     if not product or not product.is_active:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    return _serialize_product(product)
+
+
+def _link_id(link_or_doc) -> str:
+    """Extract string ID from a Beanie Link reference or Document without fetching."""
+    # Already a fetched document
+    if hasattr(link_or_doc, 'id') and not hasattr(link_or_doc, 'ref'):
+        return str(link_or_doc.id)
+    # Beanie Link with DBRef
+    try:
+        return str(link_or_doc.ref.id)
+    except AttributeError:
+        pass
+    try:
+        return str(link_or_doc.to_ref().id)
+    except Exception:
+        pass
+    return ""
 
 
 @api_router.get("/marketplace/cart/")
 async def get_cart_endpoint(current_user: User = Depends(get_current_user)):
-    cart = await Cart.find_one(Cart.user.id == current_user.id, fetch_links=True)
+    cart = await Cart.find_one(Cart.user.id == current_user.id)
     if not cart:
         cart = Cart(user=current_user, items=[])
         await cart.insert()
@@ -1336,16 +1444,20 @@ async def get_cart_endpoint(current_user: User = Depends(get_current_user)):
     total_cart_points = 0
 
     for item in cart.items:
-        product = await item.product.fetch()
-        if product:
-            total_points = item.quantity * product.points_price
-            total_cart_points += total_points
-            serialized_items.append({
-                "id": str(product.id),
-                "product": product,
-                "quantity": item.quantity,
-                "total_points": total_points
-            })
+        try:
+            product_id_str = _link_id(item.product)
+            product = await Product.get(product_id_str) if product_id_str else None
+            if product:
+                total_points = item.quantity * product.points_price
+                total_cart_points += total_points
+                serialized_items.append({
+                    "id": str(product.id),
+                    "product": _serialize_product(product),
+                    "quantity": item.quantity,
+                    "total_points": total_points
+                })
+        except Exception:
+            pass
 
     return {
         "id": str(cart.id),
@@ -1372,7 +1484,7 @@ async def add_to_cart_endpoint(
 
     existing_item = None
     for item in cart.items:
-        if str(item.product.ref.id) == data.product_id:
+        if _link_id(item.product) == data.product_id:
             existing_item = item
             break
 
@@ -1398,7 +1510,7 @@ async def remove_from_cart_endpoint(
     if not cart:
         raise HTTPException(status_code=404, detail="Cart not found")
 
-    cart.items = [item for item in cart.items if str(item.product.ref.id) != data.cart_item_id]
+    cart.items = [item for item in cart.items if _link_id(item.product) != data.cart_item_id]
     await cart.save()
     return await get_cart_endpoint(current_user)
 
@@ -1435,7 +1547,11 @@ async def redeem_cart_endpoint(current_user: User = Depends(get_current_user)):
     resolved_items = []
 
     for item in cart.items:
-        product = await item.product.fetch()
+        if isinstance(item.product, Product):
+            product = item.product
+        else:
+            pid = _link_id(item.product)
+            product = await Product.get(pid) if pid else None
         if not product:
             raise HTTPException(status_code=404, detail="One or more products no longer exist.")
         total_points_cost += product.points_price * item.quantity
@@ -1516,10 +1632,14 @@ async def redeem_cart_endpoint(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/marketplace/redemption/history/")
 async def redemption_history_endpoint(current_user: User = Depends(get_current_user)):
-    redemptions = await Redemption.find(Redemption.user.id == current_user.id, fetch_links=True).sort("-created_at").to_list()
+    redemptions = await Redemption.find(Redemption.user.id == current_user.id).sort("-created_at").to_list()
     serialized = []
     for r in redemptions:
-        prod = await r.product.fetch()
+        if isinstance(r.product, Product):
+            prod = r.product
+        else:
+            pid = _link_id(r.product)
+            prod = await Product.get(pid) if pid else None
         serialized.append({
             "id": str(r.id),
             "user": str(current_user.id),
